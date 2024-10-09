@@ -125,15 +125,15 @@
         var currentFruit;
         var fruits = [
           { name: "Maçã", emoji: "🍎", color: "#ff4d4d", points: 1 },
-          { name: "Banana", emoji: "🍌", color: "#ffff66", points: 2 },
-          { name: "Uva", emoji: "🍇", color: "#8a2be2", points: 3 },
+          { name: "Banana", emoji: "🍌", color: "#ffff66", points: 1 },
+          { name: "Uva", emoji: "🍇", color: "#8a2be2", points: 1 },
           { name: "Laranja", emoji: "🍊", color: "#ffa500", points: 1 },
-          { name: "Melancia", emoji: "🍉", color: "#fc6c85", points: 2 },
-          { name: "Morango", emoji: "🍓", color: "#ff0000", points: 2 },
-          { name: "Cereja", emoji: "🍒", color: "#de3163", points: 3 },
-          { name: "Abacaxi", emoji: "🍍", color: "#fce903", points: 2 },
+          { name: "Melancia", emoji: "🍉", color: "#fc6c85", points: 1 },
+          { name: "Morango", emoji: "🍓", color: "#ff0000", points: 1 },
+          { name: "Cereja", emoji: "🍒", color: "#de3163", points: 1 },
+          { name: "Abacaxi", emoji: "🍍", color: "#fce903", points: 1 },
           { name: "Pêssego", emoji: "🍑", color: "#ffb347", points: 1 },
-          { name: "Kiwi", emoji: "🥝", color: "#76b852", points: 3 },
+          { name: "Kiwi", emoji: "🥝", color: "#76b852", points: 1 },
         ];
 
         var score = 0;
@@ -156,7 +156,7 @@
 
         function startGame() {
           snake = [];
-          snakeLength = 5;
+          snakeLength = 1;
           snakeDirection = getRandomDirection();
           gameRunning = true;
           score = 0;
