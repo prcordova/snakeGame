@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="pt">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Jogo da Cobrinha</title>
+    <style>
+      body {
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+        background-color: #222;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        margin: 0;
+        padding: 20px;
+        color: #fff;
+      }
+
+      #gameContainer {
+        position: relative;
+      }
+
+      #gameCanvas {
+        background-color: #333;
+        border: 10px solid #444;
+        box-shadow: 0 0 20px #000;
+        display: block;
+      }
+
+      #message {
+        font-size: 24px;
+        color: #fff;
+        text-align: center;
+        margin-top: -50px; /* Ajuste solicitado */
+      }
+
+      #scoreboard {
+        margin-left: 20px;
+        width: 200px;
+      }
+
+      #scoreboard h2 {
+        text-align: center;
+        border-bottom: 1px solid #555;
+        padding-bottom: 10px;
+      }
+
+      #scoreList {
+        list-style: none;
+        padding: 0;
+        margin-top: 20px;
+      }
+
+      #scoreList li {
+        display: flex;
+        align-items: center;
+        padding: 5px 0;
+        border-bottom: 1px solid #555;
+      }
+
+      .trophy {
+        font-size: 20px;
+        margin-right: 10px;
+        width: 30px; /* Tamanho fixo para alinhamento */
+        text-align: center; /* Centraliza o conteúdo */
+      }
+
+      .gold {
+        color: gold;
+      }
+
+      .silver {
+        color: silver;
+      }
+
+      .bronze {
+        color: #cd7f32;
+      }
+
+      .scoreEntry {
+        display: flex;
+        justify-content: space-between;
+        width: 100%;
+      }
+
+      .playerName {
+        font-weight: bold;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="gameContainer">
+      <canvas id="gameCanvas" width="800" height="600"></canvas>
+      <div id="message">Pressione Espaço para iniciar o jogo</div>
+    </div>
+    <div id="scoreboard">
+      <h2>Ranking</h2>
+      <ul id="scoreList"></ul>
+    </div>
+    <script>
+      window.onload = function () {
+        var canvas = document.getElementById("gameCanvas");
+        var ctx = canvas.getContext("2d");
+
+        var gridSize = 20;
+        var tileCountX = canvas.width / gridSize;
+        var tileCountY = canvas.height / gridSize;
+
+        var snake = [];
+        var snakeLength = 5;
+        var snakeDirection = "";
+        var gameInterval;
+        var gameRunning = false;
+
+        var food = { x: 0, y: 0 };
+
+        var score = 0;
+
+        document.addEventListener("keydown", keyDownHandler);
+
+        loadScores();
+        displayScores();
+
+        function keyDownHandler(e) {
+          var key = e.key.toLowerCase();
+          if (!gameRunning && key === " ") {
+            // Inicia ou reinicia o jogo
+            startGame();
+          } else if (gameRunning) {
+            if (["w", "a", "s", "d"].includes(key)) {
+              changeDirection(key);
+            }
+          }
+        }
+
+        function startGame() {
+          // Reinicia o estado do jogo
+          snake = [];
+          snakeLength = 5;
+          snakeDirection = getRandomDirection();
+          gameRunning = true;
+          score = 0;
+          placeFood();
+          document.getElementById("message").style.display = "none";
+          // Inicializa a cobra no centro
+          var startX = Math.floor(tileCountX / 2);
+          var startY = Math.floor(tileCountY / 2);
+          for (var i = 0; i < snakeLength; i++) {
+            snake.push({ x: startX, y: startY });
+          }
+          // Inicia o loop do jogo
+          clearInterval(gameInterval);
+          gameInterval = setInterval(gameLoop, 100);
+        }
+
+        function getRandomDirection() {
+          var directions = ["w", "a", "s", "d"];
+          return directions[Math.floor(Math.random() * directions.length)];
+        }
+
+        function changeDirection(key) {
+          // Evita reversão direta de direção
+          if (key === "w" && snakeDirection !== "s") snakeDirection = "w";
+          if (key === "s" && snakeDirection !== "w") snakeDirection = "s";
+          if (key === "a" && snakeDirection !== "d") snakeDirection = "a";
+          if (key === "d" && snakeDirection !== "a") snakeDirection = "d";
+        }
+
+        function placeFood() {
+          food.x = Math.floor(Math.random() * tileCountX);
+          food.y = Math.floor(Math.random() * tileCountY);
+          // Garante que a comida não apareça sobre a cobra
+          for (var i = 0; i < snake.length; i++) {
+            if (snake[i].x === food.x && snake[i].y === food.y) {
+              placeFood();
+              break;
+            }
+          }
+        }
+
+        function gameLoop() {
+          // Move a cobra
+          var headX = snake[0].x;
+          var headY = snake[0].y;
+
+          if (snakeDirection === "w") headY--;
+          if (snakeDirection === "s") headY++;
+          if (snakeDirection === "a") headX--;
+          if (snakeDirection === "d") headX++;
+
+          // Verifica colisão com as paredes
+          if (
+            headX < 0 ||
+            headX >= tileCountX ||
+            headY < 0 ||
+            headY >= tileCountY
+          ) {
+            gameOver();
+            return;
+          }
+
+          // Verifica colisão com si mesma
+          for (var i = 0; i < snake.length; i++) {
+            if (snake[i].x === headX && snake[i].y === headY) {
+              gameOver();
+              return;
+            }
+          }
+
+          // Adiciona nova cabeça à cobra
+          snake.unshift({ x: headX, y: headY });
+
+          // Verifica se comeu a comida
+          if (headX === food.x && headY === food.y) {
+            // Aumenta o tamanho da cobra
+            snakeLength++;
+            score++;
+            placeFood();
+          }
+
+          // Remove segmentos extras da cauda
+          while (snake.length > snakeLength) {
+            snake.pop();
+          }
+
+          // Desenha tudo
+          drawGame();
+        }
+
+        function drawGame() {
+          // Limpa o canvas
+          ctx.fillStyle = "#333";
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+          // Desenha a cobra
+          for (var i = 0; i < snake.length; i++) {
+            var gradient = ctx.createLinearGradient(0, 0, canvas.width, 0);
+            gradient.addColorStop(0, "#8bc34a");
+            gradient.addColorStop(1, "#558b2f");
+            ctx.fillStyle = gradient;
+            ctx.fillRect(
+              snake[i].x * gridSize,
+              snake[i].y * gridSize,
+              gridSize - 1,
+              gridSize - 1
+            );
+          }
+
+          // Desenha a comida
+          ctx.fillStyle = "#ff5722";
+          ctx.beginPath();
+          ctx.arc(
+            food.x * gridSize + gridSize / 2,
+            food.y * gridSize + gridSize / 2,
+            gridSize / 2,
+            0,
+            Math.PI * 2
+          );
+          ctx.fill();
+        }
+
+        function gameOver() {
+          gameRunning = false;
+          clearInterval(gameInterval);
+          // Solicita o nome do jogador
+          var playerName = prompt(
+            "Game Over! Sua pontuação: " +
+              score +
+              ". Digite seu nome para salvar no ranking:"
+          );
+          if (playerName) {
+            saveScore(playerName, score);
+            displayScores();
+          }
+          document.getElementById("message").innerText =
+            "Pressione Espaço para reiniciar";
+          document.getElementById("message").style.display = "block";
+        }
+
+        function saveScore(name, score) {
+          var scores = JSON.parse(localStorage.getItem("snakeScores")) || [];
+          scores.push({ name: name, score: score });
+          // Ordena os scores em ordem decrescente
+          scores.sort(function (a, b) {
+            return b.score - a.score;
+          });
+          // Limita a 10 melhores pontuações
+          if (scores.length > 10) {
+            scores = scores.slice(0, 10);
+          }
+          localStorage.setItem("snakeScores", JSON.stringify(scores));
+        }
+
+        function loadScores() {
+          var scores = JSON.parse(localStorage.getItem("snakeScores")) || [];
+          return scores;
+        }
+
+        function displayScores() {
+          var scores = loadScores();
+          var scoreList = document.getElementById("scoreList");
+          scoreList.innerHTML = "";
+          for (var i = 0; i < scores.length; i++) {
+            var li = document.createElement("li");
+
+            var trophySpan = document.createElement("span");
+            trophySpan.classList.add("trophy");
+            if (i === 0) {
+              trophySpan.classList.add("gold");
+              trophySpan.innerHTML = "🏆";
+            } else if (i === 1) {
+              trophySpan.classList.add("silver");
+              trophySpan.innerHTML = "🥈";
+            } else if (i === 2) {
+              trophySpan.classList.add("bronze");
+              trophySpan.innerHTML = "🥉";
+            } else {
+              trophySpan.innerHTML = i + 1 + "º";
+            }
+
+            var scoreEntry = document.createElement("div");
+            scoreEntry.classList.add("scoreEntry");
+
+            var nameSpan = document.createElement("span");
+            nameSpan.classList.add("playerName");
+            nameSpan.textContent = scores[i].name;
+
+            var scoreSpan = document.createElement("span");
+            scoreSpan.textContent = scores[i].score;
+
+            scoreEntry.appendChild(nameSpan);
+            scoreEntry.appendChild(scoreSpan);
+
+            li.appendChild(trophySpan);
+            li.appendChild(scoreEntry);
+
+            scoreList.appendChild(li);
+          }
+        }
+      };
+    </script>
+  </body>
+</html>
