@@ -41,9 +41,15 @@
         font-size: 24px;
       }
 
+      #timeDisplay {
+        margin-top: 20px;
+        font-size: 24px;
+        text-align: center;
+      }
+
       #scoreboard {
         margin-left: 20px;
-        width: 200px;
+        width: 500px;
         margin-top: 3rem;
       }
 
@@ -53,22 +59,25 @@
         padding-bottom: 10px;
       }
 
-      #scoreList {
-        list-style: none;
-        padding: 0;
+      #scoreTable {
+        width: 100%;
+        border-collapse: collapse;
         margin-top: 20px;
       }
 
-      #scoreList li {
-        display: flex;
-        align-items: center;
-        padding: 5px 0;
-        border-bottom: 1px solid #555;
+      #scoreTable th,
+      #scoreTable td {
+        border: 1px solid #555;
+        padding: 8px;
+        text-align: center;
+      }
+
+      #scoreTable th {
+        background-color: #444;
       }
 
       .trophy {
         font-size: 20px;
-        margin-right: 10px;
         width: 30px;
         text-align: center;
       }
@@ -84,16 +93,6 @@
       .bronze {
         color: #cd7f32;
       }
-
-      .scoreEntry {
-        display: flex;
-        justify-content: space-between;
-        width: 100%;
-      }
-
-      .playerName {
-        font-weight: bold;
-      }
     </style>
   </head>
   <body>
@@ -101,10 +100,24 @@
       <canvas id="gameCanvas" width="800" height="600"></canvas>
       <div id="message">Pressione Espaço para iniciar o jogo</div>
       <div id="scoreDisplay">Pontuação: <span id="currentScore">0</span></div>
+      <div id="timeDisplay">
+        Tempo: <span id="currentTime">00:00:00:00</span>
+      </div>
     </div>
     <div id="scoreboard">
       <h2>Ranking</h2>
-      <ul id="scoreList"></ul>
+      <table id="scoreTable">
+        <thead>
+          <tr>
+            <th>Posição</th>
+            <th>Nome</th>
+            <th>Tempo</th>
+            <th>Frutas</th>
+            <th>Pontuação</th>
+          </tr>
+        </thead>
+        <tbody id="scoreTableBody"></tbody>
+      </table>
     </div>
     <script>
       window.onload = function () {
@@ -137,6 +150,10 @@
         ];
 
         var score = 0;
+        var fruitsEaten = 0;
+        var startTime;
+        var elapsedTime = 0;
+        var timeInterval;
 
         document.addEventListener("keydown", keyDownHandler);
 
@@ -160,7 +177,10 @@
           snakeDirection = getRandomDirection();
           gameRunning = true;
           score = 0;
+          fruitsEaten = 0;
+          elapsedTime = 0;
           updateScoreDisplay();
+          updateTimeDisplay();
           placeFood();
           document.getElementById("message").style.display = "none";
           var startX = Math.floor(tileCountX / 2);
@@ -169,7 +189,10 @@
             snake.push({ x: startX, y: startY, color: "#8bc34a" });
           }
           clearInterval(gameInterval);
+          clearInterval(timeInterval);
           gameInterval = setInterval(gameLoop, 100);
+          startTime = Date.now();
+          timeInterval = setInterval(updateElapsedTime, 10); // Atualiza a cada 10ms
         }
 
         function getRandomDirection() {
@@ -228,6 +251,7 @@
             ateFood = true;
             snakeLength++;
             score += currentFruit.points;
+            fruitsEaten++;
             updateScoreDisplay();
             eatenFruitColor = currentFruit.color; // Cor da fruta comida
             placeFood();
@@ -270,13 +294,14 @@
         function gameOver() {
           gameRunning = false;
           clearInterval(gameInterval);
+          clearInterval(timeInterval);
           var playerName = prompt(
             "Game Over! Sua pontuação: " +
               score +
               ". Digite seu nome para salvar no ranking:"
           );
           if (playerName) {
-            saveScore(playerName, score);
+            saveScore(playerName, score, elapsedTime, fruitsEaten);
             displayScores();
           }
           document.getElementById("message").innerText =
@@ -284,9 +309,14 @@
           document.getElementById("message").style.display = "block";
         }
 
-        function saveScore(name, score) {
+        function saveScore(name, score, time, fruitsEaten) {
           var scores = JSON.parse(localStorage.getItem("snakeScores")) || [];
-          scores.push({ name: name, score: score });
+          scores.push({
+            name: name,
+            score: score,
+            time: time,
+            fruits: fruitsEaten,
+          });
           scores.sort(function (a, b) {
             return b.score - a.score;
           });
@@ -303,48 +333,79 @@
 
         function displayScores() {
           var scores = loadScores();
-          var scoreList = document.getElementById("scoreList");
-          scoreList.innerHTML = "";
+          var scoreTableBody = document.getElementById("scoreTableBody");
+          scoreTableBody.innerHTML = "";
           for (var i = 0; i < scores.length; i++) {
-            var li = document.createElement("li");
+            var tr = document.createElement("tr");
 
-            var trophySpan = document.createElement("span");
-            trophySpan.classList.add("trophy");
+            var positionTd = document.createElement("td");
+            var nameTd = document.createElement("td");
+            var timeTd = document.createElement("td");
+            var fruitsTd = document.createElement("td");
+            var scoreTd = document.createElement("td");
+
+            // Posição e Troféu
             if (i === 0) {
-              trophySpan.classList.add("gold");
-              trophySpan.innerHTML = "🏆";
+              positionTd.innerHTML = '<span class="trophy gold">🏆</span>';
             } else if (i === 1) {
-              trophySpan.classList.add("silver");
-              trophySpan.innerHTML = "🥈";
+              positionTd.innerHTML = '<span class="trophy silver">🥈</span>';
             } else if (i === 2) {
-              trophySpan.classList.add("bronze");
-              trophySpan.innerHTML = "🥉";
+              positionTd.innerHTML = '<span class="trophy bronze">🥉</span>';
             } else {
-              trophySpan.innerHTML = i + 1 + ".";
+              positionTd.textContent = i + 1 + ".";
             }
 
-            var scoreEntry = document.createElement("div");
-            scoreEntry.classList.add("scoreEntry");
+            // Nome
+            nameTd.textContent = scores[i].name;
 
-            var nameSpan = document.createElement("span");
-            nameSpan.classList.add("playerName");
-            nameSpan.textContent = scores[i].name;
+            // Tempo com centésimos
+            timeTd.textContent = formatTime(scores[i].time);
 
-            var scoreSpan = document.createElement("span");
-            scoreSpan.textContent = scores[i].score;
+            // Frutas
+            fruitsTd.textContent = scores[i].fruits;
 
-            scoreEntry.appendChild(nameSpan);
-            scoreEntry.appendChild(scoreSpan);
+            // Pontuação
+            scoreTd.textContent = scores[i].score;
 
-            li.appendChild(trophySpan);
-            li.appendChild(scoreEntry);
+            tr.appendChild(positionTd);
+            tr.appendChild(nameTd);
+            tr.appendChild(timeTd);
+            tr.appendChild(fruitsTd);
+            tr.appendChild(scoreTd);
 
-            scoreList.appendChild(li);
+            scoreTableBody.appendChild(tr);
           }
         }
 
         function updateScoreDisplay() {
           document.getElementById("currentScore").innerText = score;
+        }
+
+        function updateElapsedTime() {
+          elapsedTime = Date.now() - startTime;
+          updateTimeDisplay();
+        }
+
+        function updateTimeDisplay() {
+          document.getElementById("currentTime").innerText =
+            formatTime(elapsedTime);
+        }
+
+        function formatTime(milliseconds) {
+          var hrs = Math.floor(milliseconds / 3600000);
+          var mins = Math.floor((milliseconds % 3600000) / 60000);
+          var secs = Math.floor((milliseconds % 60000) / 1000);
+          var centis = Math.floor((milliseconds % 1000) / 10);
+
+          return (
+            (hrs < 10 ? "0" + hrs : hrs) +
+            ":" +
+            (mins < 10 ? "0" + mins : mins) +
+            ":" +
+            (secs < 10 ? "0" + secs : secs) +
+            ":" +
+            (centis < 10 ? "0" + centis : centis)
+          );
         }
       };
     </script>
