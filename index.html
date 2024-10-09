@@ -17,6 +17,7 @@
 
       #gameContainer {
         position: relative;
+        margin-top: 3rem;
       }
 
       #gameCanvas {
@@ -30,12 +31,20 @@
         font-size: 24px;
         color: #fff;
         text-align: center;
-        margin-top: -50px; /* Ajuste solicitado */
+        margin-top: -50px;
+      }
+
+      #scoreDisplay {
+        position: absolute;
+        top: -50px;
+        left: 0;
+        font-size: 24px;
       }
 
       #scoreboard {
         margin-left: 20px;
         width: 200px;
+        margin-top: 3rem;
       }
 
       #scoreboard h2 {
@@ -60,8 +69,8 @@
       .trophy {
         font-size: 20px;
         margin-right: 10px;
-        width: 30px; /* Tamanho fixo para alinhamento */
-        text-align: center; /* Centraliza o conteúdo */
+        width: 30px;
+        text-align: center;
       }
 
       .gold {
@@ -91,6 +100,7 @@
     <div id="gameContainer">
       <canvas id="gameCanvas" width="800" height="600"></canvas>
       <div id="message">Pressione Espaço para iniciar o jogo</div>
+      <div id="scoreDisplay">Pontuação: <span id="currentScore">0</span></div>
     </div>
     <div id="scoreboard">
       <h2>Ranking</h2>
@@ -112,6 +122,19 @@
         var gameRunning = false;
 
         var food = { x: 0, y: 0 };
+        var currentFruit;
+        var fruits = [
+          { name: "Maçã", emoji: "🍎", color: "#ff4d4d", points: 1 },
+          { name: "Banana", emoji: "🍌", color: "#ffff66", points: 2 },
+          { name: "Uva", emoji: "🍇", color: "#8a2be2", points: 3 },
+          { name: "Laranja", emoji: "🍊", color: "#ffa500", points: 1 },
+          { name: "Melancia", emoji: "🍉", color: "#fc6c85", points: 2 },
+          { name: "Morango", emoji: "🍓", color: "#ff0000", points: 2 },
+          { name: "Cereja", emoji: "🍒", color: "#de3163", points: 3 },
+          { name: "Abacaxi", emoji: "🍍", color: "#fce903", points: 2 },
+          { name: "Pêssego", emoji: "🍑", color: "#ffb347", points: 1 },
+          { name: "Kiwi", emoji: "🥝", color: "#76b852", points: 3 },
+        ];
 
         var score = 0;
 
@@ -123,7 +146,6 @@
         function keyDownHandler(e) {
           var key = e.key.toLowerCase();
           if (!gameRunning && key === " ") {
-            // Inicia ou reinicia o jogo
             startGame();
           } else if (gameRunning) {
             if (["w", "a", "s", "d"].includes(key)) {
@@ -133,21 +155,19 @@
         }
 
         function startGame() {
-          // Reinicia o estado do jogo
           snake = [];
           snakeLength = 5;
           snakeDirection = getRandomDirection();
           gameRunning = true;
           score = 0;
+          updateScoreDisplay();
           placeFood();
           document.getElementById("message").style.display = "none";
-          // Inicializa a cobra no centro
           var startX = Math.floor(tileCountX / 2);
           var startY = Math.floor(tileCountY / 2);
           for (var i = 0; i < snakeLength; i++) {
-            snake.push({ x: startX, y: startY });
+            snake.push({ x: startX, y: startY, color: "#8bc34a" });
           }
-          // Inicia o loop do jogo
           clearInterval(gameInterval);
           gameInterval = setInterval(gameLoop, 100);
         }
@@ -158,7 +178,6 @@
         }
 
         function changeDirection(key) {
-          // Evita reversão direta de direção
           if (key === "w" && snakeDirection !== "s") snakeDirection = "w";
           if (key === "s" && snakeDirection !== "w") snakeDirection = "s";
           if (key === "a" && snakeDirection !== "d") snakeDirection = "a";
@@ -168,17 +187,16 @@
         function placeFood() {
           food.x = Math.floor(Math.random() * tileCountX);
           food.y = Math.floor(Math.random() * tileCountY);
-          // Garante que a comida não apareça sobre a cobra
           for (var i = 0; i < snake.length; i++) {
             if (snake[i].x === food.x && snake[i].y === food.y) {
               placeFood();
-              break;
+              return;
             }
           }
+          currentFruit = fruits[Math.floor(Math.random() * fruits.length)];
         }
 
         function gameLoop() {
-          // Move a cobra
           var headX = snake[0].x;
           var headY = snake[0].y;
 
@@ -187,7 +205,6 @@
           if (snakeDirection === "a") headX--;
           if (snakeDirection === "d") headX++;
 
-          // Verifica colisão com as paredes
           if (
             headX < 0 ||
             headX >= tileCountX ||
@@ -198,7 +215,6 @@
             return;
           }
 
-          // Verifica colisão com si mesma
           for (var i = 0; i < snake.length; i++) {
             if (snake[i].x === headX && snake[i].y === headY) {
               gameOver();
@@ -206,37 +222,33 @@
             }
           }
 
-          // Adiciona nova cabeça à cobra
-          snake.unshift({ x: headX, y: headY });
-
-          // Verifica se comeu a comida
+          var ateFood = false;
+          var eatenFruitColor = snake[0].color; // Cor padrão
           if (headX === food.x && headY === food.y) {
-            // Aumenta o tamanho da cobra
+            ateFood = true;
             snakeLength++;
-            score++;
+            score += currentFruit.points;
+            updateScoreDisplay();
+            eatenFruitColor = currentFruit.color; // Cor da fruta comida
             placeFood();
           }
 
-          // Remove segmentos extras da cauda
+          var newHeadColor = ateFood ? eatenFruitColor : snake[0].color;
+          snake.unshift({ x: headX, y: headY, color: newHeadColor });
+
           while (snake.length > snakeLength) {
             snake.pop();
           }
 
-          // Desenha tudo
           drawGame();
         }
 
         function drawGame() {
-          // Limpa o canvas
           ctx.fillStyle = "#333";
           ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-          // Desenha a cobra
           for (var i = 0; i < snake.length; i++) {
-            var gradient = ctx.createLinearGradient(0, 0, canvas.width, 0);
-            gradient.addColorStop(0, "#8bc34a");
-            gradient.addColorStop(1, "#558b2f");
-            ctx.fillStyle = gradient;
+            ctx.fillStyle = snake[i].color;
             ctx.fillRect(
               snake[i].x * gridSize,
               snake[i].y * gridSize,
@@ -245,23 +257,19 @@
             );
           }
 
-          // Desenha a comida
-          ctx.fillStyle = "#ff5722";
-          ctx.beginPath();
-          ctx.arc(
+          ctx.font = gridSize + "px Arial";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText(
+            currentFruit.emoji,
             food.x * gridSize + gridSize / 2,
-            food.y * gridSize + gridSize / 2,
-            gridSize / 2,
-            0,
-            Math.PI * 2
+            food.y * gridSize + gridSize / 2
           );
-          ctx.fill();
         }
 
         function gameOver() {
           gameRunning = false;
           clearInterval(gameInterval);
-          // Solicita o nome do jogador
           var playerName = prompt(
             "Game Over! Sua pontuação: " +
               score +
@@ -279,11 +287,9 @@
         function saveScore(name, score) {
           var scores = JSON.parse(localStorage.getItem("snakeScores")) || [];
           scores.push({ name: name, score: score });
-          // Ordena os scores em ordem decrescente
           scores.sort(function (a, b) {
             return b.score - a.score;
           });
-          // Limita a 10 melhores pontuações
           if (scores.length > 10) {
             scores = scores.slice(0, 10);
           }
@@ -314,7 +320,7 @@
               trophySpan.classList.add("bronze");
               trophySpan.innerHTML = "🥉";
             } else {
-              trophySpan.innerHTML = i + 1 + "º";
+              trophySpan.innerHTML = i + 1 + ".";
             }
 
             var scoreEntry = document.createElement("div");
@@ -335,6 +341,10 @@
 
             scoreList.appendChild(li);
           }
+        }
+
+        function updateScoreDisplay() {
+          document.getElementById("currentScore").innerText = score;
         }
       };
     </script>
