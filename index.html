@@ -51,18 +51,65 @@
         margin-left: 20px;
         width: 500px;
         margin-top: 3rem;
+        display: flex;
+        flex-direction: column;
+        height: 600px; /* Altura igual ao canvas */
       }
 
-      #scoreboard h2 {
-        text-align: center;
-        border-bottom: 1px solid #555;
+      /* Contêineres para ranking e loja */
+      #rankingContainer,
+      #shopContainer {
+        flex: 1;
+        overflow: hidden; /* Oculta overflow para controlar manualmente */
+        display: flex;
+        flex-direction: column;
+        position: relative;
+      }
+
+      /* Linha separadora entre ranking e loja */
+      #shopContainer {
+        border-top: 2px solid #555;
+      }
+
+      /* Estilos para a barra de rolagem */
+      /* Firefox */
+      * {
+        scrollbar-width: thin;
+        scrollbar-color: #888 #333;
+      }
+
+      /* Chrome, Edge e Safari */
+      *::-webkit-scrollbar {
+        width: 8px;
+      }
+
+      *::-webkit-scrollbar-track {
+        background: #333;
+      }
+
+      *::-webkit-scrollbar-thumb {
+        background-color: #888;
+        border-radius: 4px;
+      }
+
+      /* Estilos para o ranking */
+      #rankingHeader {
+        background-color: #222;
         padding-bottom: 10px;
+        border-bottom: 1px solid #555;
+        position: sticky;
+        top: 0;
+        z-index: 1;
+      }
+
+      #scoreTableContainer {
+        flex: 1;
+        overflow-y: auto;
       }
 
       #scoreTable {
         width: 100%;
         border-collapse: collapse;
-        margin-top: 20px;
       }
 
       #scoreTable th,
@@ -74,6 +121,9 @@
 
       #scoreTable th {
         background-color: #444;
+        position: sticky;
+        top: 0;
+        z-index: 2;
       }
 
       .trophy {
@@ -95,23 +145,28 @@
       }
 
       /* Estilos para a loja */
-      #shop {
-        margin-top: 20px;
-        text-align: center;
+      #shopHeader {
+        background-color: #222;
+        padding-bottom: 10px;
+        border-bottom: 1px solid #555;
+        position: sticky;
+        top: 0;
+        z-index: 1;
       }
 
-      #shop h2 {
-        border-bottom: 1px solid #555;
-        padding-bottom: 10px;
+      #shop {
+        flex: 1;
+        overflow-y: auto;
+        text-align: center;
       }
 
       .skin {
         display: inline-block;
-        margin: 10px;
+        margin: 20px;
         cursor: pointer;
         border: 2px solid transparent;
-        width: 60px;
-        height: 60px;
+        width: 80px;
+        height: 80px;
         position: relative;
       }
 
@@ -134,7 +189,7 @@
 
       .skin .name {
         position: absolute;
-        bottom: -20px;
+        bottom: -25px;
         width: 100%;
         text-align: center;
         font-size: 14px;
@@ -142,7 +197,7 @@
 
       .skin .price {
         position: absolute;
-        bottom: -40px;
+        bottom: -45px;
         width: 100%;
         text-align: center;
         font-size: 12px;
@@ -178,6 +233,74 @@
         background-image: radial-gradient(#4caf50 20%, transparent 20%);
         background-size: 10px 10px;
       }
+
+      .zigzag {
+        background: linear-gradient(135deg, #8bc34a 25%, transparent 25%) -10px 0,
+          linear-gradient(225deg, #8bc34a 25%, transparent 25%) -10px 0,
+          linear-gradient(315deg, #8bc34a 25%, transparent 25%),
+          linear-gradient(45deg, #8bc34a 25%, transparent 25%);
+        background-size: 20px 20px;
+        background-color: #4caf50;
+      }
+
+      .gradient {
+        background: linear-gradient(to bottom, #8bc34a, #4caf50);
+      }
+
+      .dots {
+        background-color: #8bc34a;
+        background-image: radial-gradient(#4caf50 10%, transparent 10%);
+        background-size: 10px 10px;
+      }
+
+      .diamond {
+        background: linear-gradient(45deg, #8bc34a 25%, transparent 25%) 0 0,
+          linear-gradient(-45deg, #8bc34a 25%, transparent 25%) 0 0,
+          linear-gradient(45deg, transparent 75%, #8bc34a 75%) 0 0,
+          linear-gradient(-45deg, transparent 75%, #8bc34a 75%) 0 0;
+        background-size: 20px 20px;
+        background-color: #4caf50;
+      }
+
+      .cross {
+        background-color: #8bc34a;
+        background-image: linear-gradient(90deg, #4caf50 1px, transparent 1px),
+          linear-gradient(#4caf50 1px, transparent 1px);
+        background-size: 10px 10px;
+      }
+
+      .wave {
+        background: radial-gradient(
+            circle at 0% 50%,
+            #4caf50 20%,
+            transparent 21%
+          ),
+          radial-gradient(circle at 50% 50%, #4caf50 20%, transparent 21%),
+          radial-gradient(circle at 100% 50%, #4caf50 20%, transparent 21%);
+        background-size: 30px 30px;
+        background-color: #8bc34a;
+      }
+
+      .checker {
+        background: repeating-linear-gradient(
+          45deg,
+          #8bc34a,
+          #8bc34a 10px,
+          #4caf50 10px,
+          #4caf50 20px
+        );
+      }
+
+      .legendary {
+        background-color: gold;
+        background-image: repeating-linear-gradient(
+          45deg,
+          gold,
+          gold 10px,
+          goldenrod 10px,
+          goldenrod 20px
+        );
+      }
     </style>
   </head>
   <body>
@@ -190,28 +313,38 @@
       </div>
     </div>
     <div id="scoreboard">
-      <h2>Ranking</h2>
-      <table id="scoreTable">
-        <thead>
-          <tr>
-            <th>Posição</th>
-            <th>Nome</th>
-            <th>Tempo</th>
-            <th>Frutas</th>
-            <th>Pontuação</th>
-          </tr>
-        </thead>
-        <tbody id="scoreTableBody"></tbody>
-      </table>
-
-      <!-- Loja de Skins -->
-      <div id="shop">
-        <h2>Loja de Skins</h2>
-        <div id="currencyDisplay">
+      <!-- Contêiner do Ranking -->
+      <div id="rankingContainer">
+        <div id="rankingHeader">
+          <h2>Ranking</h2>
+        </div>
+        <div id="scoreTableContainer">
+          <table id="scoreTable">
+            <thead>
+              <tr>
+                <th>Posição</th>
+                <th>Nome</th>
+                <th>Tempo</th>
+                <th>Frutas</th>
+                <th>Pontuação</th>
+              </tr>
+            </thead>
+            <tbody id="scoreTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+      <!-- Contêiner da Loja -->
+      <div id="shopContainer">
+        <div id="shopHeader">
+          <h2>Loja de Skins</h2>
           Dinheiro: $<span id="currencyAmount">0</span>
         </div>
-        <div id="skinsContainer"></div>
-        <p id="errorMessage"></p>
+        <div id="shop">
+          <div id="skinsContainer"></div>
+        </div>
+        <div>
+          <p id="errorMessage"></p>
+        </div>
       </div>
     </div>
     <script>
@@ -279,16 +412,72 @@
           {
             id: 2,
             name: "Listrada",
-            price: 25,
+            price: 50,
             unlocked: false,
             pattern: "striped",
           },
           {
             id: 3,
             name: "Pintada",
-            price: 50,
+            price: 100,
             unlocked: false,
             pattern: "spotted",
+          },
+          {
+            id: 4,
+            name: "Ziguezague",
+            price: 150,
+            unlocked: false,
+            pattern: "zigzag",
+          },
+          {
+            id: 5,
+            name: "Gradiente",
+            price: 200,
+            unlocked: false,
+            pattern: "gradient",
+          },
+          {
+            id: 6,
+            name: "Pontilhada",
+            price: 250,
+            unlocked: false,
+            pattern: "dots",
+          },
+          {
+            id: 7,
+            name: "Diamante",
+            price: 300,
+            unlocked: false,
+            pattern: "diamond",
+          },
+          {
+            id: 8,
+            name: "Cruzada",
+            price: 350,
+            unlocked: false,
+            pattern: "cross",
+          },
+          {
+            id: 9,
+            name: "Ondulada",
+            price: 400,
+            unlocked: false,
+            pattern: "wave",
+          },
+          {
+            id: 10,
+            name: "Quadriculada",
+            price: 450,
+            unlocked: false,
+            pattern: "checker",
+          },
+          {
+            id: 11,
+            name: "Lendária",
+            price: 1000,
+            unlocked: false,
+            pattern: "legendary",
           },
         ];
 
@@ -302,7 +491,7 @@
           }
         });
 
-        var selectedSkin = localStorage.getItem("selectedSkin") || 1;
+        var selectedSkin = parseInt(localStorage.getItem("selectedSkin")) || 1;
         updateSkinsDisplay();
 
         document.addEventListener("keydown", keyDownHandler);
@@ -418,7 +607,7 @@
           }
 
           // Verifica colisão com a própria cobra
-          for (var i = 0; i < snake.length; i++) {
+          for (var i = 1; i < snake.length; i++) {
             if (snake[i].x === headX && snake[i].y === headY) {
               gameOver();
               return;
@@ -446,7 +635,7 @@
             eatenFruitColor = currentFruit.color; // Cor da fruta comida
 
             // Se for o ícone de dinheiro, acumula dinheiro
-            if (currentFruit.name === "Dinheiro") {
+            if (currentFruit.money) {
               currency += currentFruit.money;
               updateCurrencyDisplay();
               saveCurrency();
@@ -470,34 +659,26 @@
           ctx.fillRect(0, 0, canvas.width, canvas.height);
 
           // Desenha a cobra
+          var selectedSkinObj = skins.find(function (skin) {
+            return skin.id === selectedSkin;
+          });
+
           for (var i = 0; i < snake.length; i++) {
-            ctx.fillStyle = snake[i].color;
             var x = snake[i].x * gridSize;
             var y = snake[i].y * gridSize;
 
             // Aplica a skin selecionada
-            if (selectedSkin == 2) {
-              // Skin listrada
-              ctx.fillStyle = snake[i].color;
-              ctx.fillRect(x, y, gridSize - 1, gridSize - 1);
-              ctx.fillStyle = "#000";
-              ctx.fillRect(x, y + gridSize / 2, gridSize - 1, gridSize / 2 - 1);
-            } else if (selectedSkin == 3) {
-              // Skin pintada
-              ctx.fillStyle = snake[i].color;
-              ctx.fillRect(x, y, gridSize - 1, gridSize - 1);
-              ctx.fillStyle = "#000";
-              ctx.beginPath();
-              ctx.arc(
-                x + gridSize / 2,
-                y + gridSize / 2,
-                gridSize / 4,
-                0,
-                2 * Math.PI
-              );
-              ctx.fill();
-            } else {
+            if (selectedSkinObj.pattern === "solid") {
               // Skin padrão
+              ctx.fillStyle = snake[i].color;
+              ctx.fillRect(x, y, gridSize - 1, gridSize - 1);
+            } else {
+              // Cria um canvas temporário para aplicar o padrão
+              var pattern = ctx.createPattern(
+                createPattern(selectedSkinObj.pattern, snake[i].color),
+                "repeat"
+              );
+              ctx.fillStyle = pattern;
               ctx.fillRect(x, y, gridSize - 1, gridSize - 1);
             }
           }
@@ -520,6 +701,122 @@
               bombs[i].y * gridSize + gridSize / 2
             );
           }
+        }
+
+        function createPattern(patternName, color) {
+          var patternCanvas = document.createElement("canvas");
+          var patternCtx = patternCanvas.getContext("2d");
+          patternCanvas.width = 20;
+          patternCanvas.height = 20;
+
+          switch (patternName) {
+            case "striped":
+              patternCtx.fillStyle = color;
+              patternCtx.fillRect(0, 0, 20, 20);
+              patternCtx.strokeStyle = "#000";
+              patternCtx.lineWidth = 5;
+              patternCtx.beginPath();
+              patternCtx.moveTo(0, 0);
+              patternCtx.lineTo(20, 20);
+              patternCtx.stroke();
+              break;
+            case "spotted":
+              patternCtx.fillStyle = color;
+              patternCtx.fillRect(0, 0, 20, 20);
+              patternCtx.fillStyle = "#000";
+              patternCtx.beginPath();
+              patternCtx.arc(10, 10, 5, 0, 2 * Math.PI);
+              patternCtx.fill();
+              break;
+            case "zigzag":
+              patternCtx.fillStyle = color;
+              patternCtx.fillRect(0, 0, 20, 20);
+              patternCtx.strokeStyle = "#000";
+              patternCtx.lineWidth = 2;
+              patternCtx.beginPath();
+              patternCtx.moveTo(0, 10);
+              patternCtx.lineTo(5, 5);
+              patternCtx.lineTo(10, 15);
+              patternCtx.lineTo(15, 5);
+              patternCtx.lineTo(20, 10);
+              patternCtx.stroke();
+              break;
+            case "gradient":
+              var grad = patternCtx.createLinearGradient(0, 0, 0, 20);
+              grad.addColorStop(0, color);
+              grad.addColorStop(1, "#000");
+              patternCtx.fillStyle = grad;
+              patternCtx.fillRect(0, 0, 20, 20);
+              break;
+            case "dots":
+              patternCtx.fillStyle = color;
+              patternCtx.fillRect(0, 0, 20, 20);
+              patternCtx.fillStyle = "#000";
+              patternCtx.beginPath();
+              patternCtx.arc(5, 5, 2, 0, 2 * Math.PI);
+              patternCtx.fill();
+              patternCtx.beginPath();
+              patternCtx.arc(15, 15, 2, 0, 2 * Math.PI);
+              patternCtx.fill();
+              break;
+            case "diamond":
+              patternCtx.fillStyle = color;
+              patternCtx.fillRect(0, 0, 20, 20);
+              patternCtx.fillStyle = "#000";
+              patternCtx.beginPath();
+              patternCtx.moveTo(10, 0);
+              patternCtx.lineTo(20, 10);
+              patternCtx.lineTo(10, 20);
+              patternCtx.lineTo(0, 10);
+              patternCtx.closePath();
+              patternCtx.fill();
+              break;
+            case "cross":
+              patternCtx.fillStyle = color;
+              patternCtx.fillRect(0, 0, 20, 20);
+              patternCtx.strokeStyle = "#000";
+              patternCtx.lineWidth = 2;
+              patternCtx.beginPath();
+              patternCtx.moveTo(10, 0);
+              patternCtx.lineTo(10, 20);
+              patternCtx.moveTo(0, 10);
+              patternCtx.lineTo(20, 10);
+              patternCtx.stroke();
+              break;
+            case "wave":
+              patternCtx.fillStyle = color;
+              patternCtx.fillRect(0, 0, 20, 20);
+              patternCtx.fillStyle = "#000";
+              patternCtx.beginPath();
+              patternCtx.arc(5, 10, 5, 0, Math.PI);
+              patternCtx.fill();
+              patternCtx.beginPath();
+              patternCtx.arc(15, 10, 5, Math.PI, 2 * Math.PI);
+              patternCtx.fill();
+              break;
+            case "checker":
+              patternCtx.fillStyle = color;
+              patternCtx.fillRect(0, 0, 20, 20);
+              patternCtx.fillStyle = "#000";
+              patternCtx.fillRect(0, 0, 10, 10);
+              patternCtx.fillRect(10, 10, 10, 10);
+              break;
+            case "legendary":
+              patternCtx.fillStyle = "gold";
+              patternCtx.fillRect(0, 0, 20, 20);
+              patternCtx.fillStyle = "#ffd700";
+              patternCtx.font = "16px Arial";
+              patternCtx.textAlign = "center";
+              patternCtx.textBaseline = "middle";
+              patternCtx.fillText("$", 10, 10);
+              break;
+            default:
+              patternCtx.fillStyle = color;
+              patternCtx.fillRect(0, 0, 20, 20);
+              break;
+          }
+
+          return patternCanvas;
         }
 
         function gameOver() {
@@ -710,7 +1007,7 @@
                 }
               } else {
                 document.getElementById("errorMessage").textContent =
-                  "Not enough cash";
+                  "Dinheiro insuficiente";
               }
             });
 
