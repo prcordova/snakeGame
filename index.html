@@ -93,6 +93,91 @@
       .bronze {
         color: #cd7f32;
       }
+
+      /* Estilos para a loja */
+      #shop {
+        margin-top: 20px;
+        text-align: center;
+      }
+
+      #shop h2 {
+        border-bottom: 1px solid #555;
+        padding-bottom: 10px;
+      }
+
+      .skin {
+        display: inline-block;
+        margin: 10px;
+        cursor: pointer;
+        border: 2px solid transparent;
+        width: 60px;
+        height: 60px;
+        position: relative;
+      }
+
+      .skin.locked {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      .skin.selected {
+        border: 2px solid #fff;
+      }
+
+      .skin .pattern {
+        width: 100%;
+        height: 100%;
+        position: absolute;
+        top: 0;
+        left: 0;
+      }
+
+      .skin .name {
+        position: absolute;
+        bottom: -20px;
+        width: 100%;
+        text-align: center;
+        font-size: 14px;
+      }
+
+      .skin .price {
+        position: absolute;
+        bottom: -40px;
+        width: 100%;
+        text-align: center;
+        font-size: 12px;
+      }
+
+      #currencyDisplay {
+        margin-top: 10px;
+        font-size: 20px;
+      }
+
+      #errorMessage {
+        color: red;
+        margin-top: 10px;
+      }
+
+      /* Padrões das skins */
+      .solid {
+        background-color: #8bc34a;
+      }
+
+      .striped {
+        background: repeating-linear-gradient(
+          45deg,
+          #8bc34a,
+          #8bc34a 10px,
+          #4caf50 10px,
+          #4caf50 20px
+        );
+      }
+
+      .spotted {
+        background-color: #8bc34a;
+        background-image: radial-gradient(#4caf50 20%, transparent 20%);
+        background-size: 10px 10px;
+      }
     </style>
   </head>
   <body>
@@ -118,6 +203,16 @@
         </thead>
         <tbody id="scoreTableBody"></tbody>
       </table>
+
+      <!-- Loja de Skins -->
+      <div id="shop">
+        <h2>Loja de Skins</h2>
+        <div id="currencyDisplay">
+          Dinheiro: $<span id="currencyAmount">0</span>
+        </div>
+        <div id="skinsContainer"></div>
+        <p id="errorMessage"></p>
+      </div>
     </div>
     <script>
       window.onload = function () {
@@ -142,18 +237,73 @@
           { name: "Uva", emoji: "🍇", color: "#8a2be2", points: 1 },
           { name: "Laranja", emoji: "🍊", color: "#ffa500", points: 1 },
           { name: "Melancia", emoji: "🍉", color: "#fc6c85", points: 1 },
-          { name: "Morango", emoji: "🍓", color: "#ff0000", points: 1 },
-          { name: "Cereja", emoji: "🍒", color: "#de3163", points: 1 },
+          { name: "Morango", emoji: "🍓", color: "#ff0000", points: 2 },
+          { name: "Cereja", emoji: "🍒", color: "#de3163", points: 2 },
           { name: "Abacaxi", emoji: "🍍", color: "#fce903", points: 1 },
           { name: "Pêssego", emoji: "🍑", color: "#ffb347", points: 1 },
           { name: "Kiwi", emoji: "🥝", color: "#76b852", points: 1 },
+          { name: "Pera", emoji: "🍐", color: "#b4eeb4", points: 1 },
+          { name: "Limão", emoji: "🍋", color: "#fff44f", points: 1 },
+          { name: "Coração", emoji: "❤️", color: "#ff0000", points: 3 },
+          { name: "Estrela", emoji: "⭐", color: "#ffd700", points: 5 },
+          {
+            name: "Diamante",
+            emoji: "💎",
+            color: "#b9f2ff",
+            money: 3,
+            points: 0,
+          },
+          {
+            name: "Dinheiro",
+            emoji: "💰",
+            color: "#85bb65",
+            points: 0,
+            money: 2,
+          },
         ];
+
+        var bombs = [];
+        var bombInterval;
 
         var score = 0;
         var fruitsEaten = 0;
         var startTime;
         var elapsedTime = 0;
         var timeInterval;
+
+        var currency = parseInt(localStorage.getItem("snakeCurrency")) || 0;
+        updateCurrencyDisplay();
+
+        var skins = [
+          { id: 1, name: "Padrão", price: 0, unlocked: true, pattern: "solid" },
+          {
+            id: 2,
+            name: "Listrada",
+            price: 10,
+            unlocked: false,
+            pattern: "striped",
+          },
+          {
+            id: 3,
+            name: "Pintada",
+            price: 15,
+            unlocked: false,
+            pattern: "spotted",
+          },
+        ];
+
+        // Carrega skins desbloqueadas do localStorage
+        var unlockedSkins = JSON.parse(
+          localStorage.getItem("unlockedSkins")
+        ) || [1];
+        skins.forEach(function (skin) {
+          if (unlockedSkins.includes(skin.id)) {
+            skin.unlocked = true;
+          }
+        });
+
+        var selectedSkin = localStorage.getItem("selectedSkin") || 1;
+        updateSkinsDisplay();
 
         document.addEventListener("keydown", keyDownHandler);
 
@@ -179,6 +329,7 @@
           score = 0;
           fruitsEaten = 0;
           elapsedTime = 0;
+          bombs = [];
           updateScoreDisplay();
           updateTimeDisplay();
           placeFood();
@@ -190,9 +341,11 @@
           }
           clearInterval(gameInterval);
           clearInterval(timeInterval);
+          clearInterval(bombInterval);
           gameInterval = setInterval(gameLoop, 100);
           startTime = Date.now();
           timeInterval = setInterval(updateElapsedTime, 10); // Atualiza a cada 10ms
+          bombInterval = setInterval(placeBomb, 30000); // A cada 30 segundos
         }
 
         function getRandomDirection() {
@@ -210,13 +363,39 @@
         function placeFood() {
           food.x = Math.floor(Math.random() * tileCountX);
           food.y = Math.floor(Math.random() * tileCountY);
+          // Verifica se a comida não aparece sobre a cobra ou uma bomba
           for (var i = 0; i < snake.length; i++) {
             if (snake[i].x === food.x && snake[i].y === food.y) {
               placeFood();
               return;
             }
           }
+          for (var i = 0; i < bombs.length; i++) {
+            if (bombs[i].x === food.x && bombs[i].y === food.y) {
+              placeFood();
+              return;
+            }
+          }
           currentFruit = fruits[Math.floor(Math.random() * fruits.length)];
+        }
+
+        function placeBomb() {
+          var bomb = {
+            x: Math.floor(Math.random() * tileCountX),
+            y: Math.floor(Math.random() * tileCountY),
+          };
+          // Verifica se a bomba não aparece sobre a cobra ou a comida
+          for (var i = 0; i < snake.length; i++) {
+            if (snake[i].x === bomb.x && snake[i].y === bomb.y) {
+              placeBomb();
+              return;
+            }
+          }
+          if (food.x === bomb.x && food.y === bomb.y) {
+            placeBomb();
+            return;
+          }
+          bombs.push(bomb);
         }
 
         function gameLoop() {
@@ -238,10 +417,21 @@
             return;
           }
 
+          // Verifica colisão com a própria cobra
           for (var i = 0; i < snake.length; i++) {
             if (snake[i].x === headX && snake[i].y === headY) {
               gameOver();
               return;
+            }
+          }
+
+          // Verifica colisão com as bombas
+          for (var i = 0; i < bombs.length; i++) {
+            if (bombs[i].x === headX && bombs[i].y === headY) {
+              score -= 5;
+              updateScoreDisplay();
+              bombs.splice(i, 1); // Remove a bomba após a colisão
+              break;
             }
           }
 
@@ -254,6 +444,14 @@
             fruitsEaten++;
             updateScoreDisplay();
             eatenFruitColor = currentFruit.color; // Cor da fruta comida
+
+            // Se for o ícone de dinheiro, acumula dinheiro
+            if (currentFruit.name === "Dinheiro") {
+              currency += currentFruit.money;
+              updateCurrencyDisplay();
+              saveCurrency();
+            }
+
             placeFood();
           }
 
@@ -271,17 +469,41 @@
           ctx.fillStyle = "#333";
           ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+          // Desenha a cobra
           for (var i = 0; i < snake.length; i++) {
             ctx.fillStyle = snake[i].color;
-            ctx.fillRect(
-              snake[i].x * gridSize,
-              snake[i].y * gridSize,
-              gridSize - 1,
-              gridSize - 1
-            );
+            var x = snake[i].x * gridSize;
+            var y = snake[i].y * gridSize;
+
+            // Aplica a skin selecionada
+            if (selectedSkin == 2) {
+              // Skin listrada
+              ctx.fillStyle = snake[i].color;
+              ctx.fillRect(x, y, gridSize - 1, gridSize - 1);
+              ctx.fillStyle = "#000";
+              ctx.fillRect(x, y + gridSize / 2, gridSize - 1, gridSize / 2 - 1);
+            } else if (selectedSkin == 3) {
+              // Skin pintada
+              ctx.fillStyle = snake[i].color;
+              ctx.fillRect(x, y, gridSize - 1, gridSize - 1);
+              ctx.fillStyle = "#000";
+              ctx.beginPath();
+              ctx.arc(
+                x + gridSize / 2,
+                y + gridSize / 2,
+                gridSize / 4,
+                0,
+                2 * Math.PI
+              );
+              ctx.fill();
+            } else {
+              // Skin padrão
+              ctx.fillRect(x, y, gridSize - 1, gridSize - 1);
+            }
           }
 
-          ctx.font = gridSize + "px Arial";
+          // Desenha a comida
+          ctx.font = gridSize + "px Segoe UI Emoji";
           ctx.textAlign = "center";
           ctx.textBaseline = "middle";
           ctx.fillText(
@@ -289,12 +511,22 @@
             food.x * gridSize + gridSize / 2,
             food.y * gridSize + gridSize / 2
           );
+
+          // Desenha as bombas
+          for (var i = 0; i < bombs.length; i++) {
+            ctx.fillText(
+              "💣",
+              bombs[i].x * gridSize + gridSize / 2,
+              bombs[i].y * gridSize + gridSize / 2
+            );
+          }
         }
 
         function gameOver() {
           gameRunning = false;
           clearInterval(gameInterval);
           clearInterval(timeInterval);
+          clearInterval(bombInterval);
           var playerName = prompt(
             "Game Over! Sua pontuação: " +
               score +
@@ -406,6 +638,84 @@
             ":" +
             (centis < 10 ? "0" + centis : centis)
           );
+        }
+
+        // Funções para a loja
+        function updateCurrencyDisplay() {
+          document.getElementById("currencyAmount").innerText = currency;
+        }
+
+        function saveCurrency() {
+          localStorage.setItem("snakeCurrency", currency);
+        }
+
+        function updateSkinsDisplay() {
+          var skinsContainer = document.getElementById("skinsContainer");
+          skinsContainer.innerHTML = "";
+          skins.forEach(function (skin) {
+            var skinDiv = document.createElement("div");
+            skinDiv.classList.add("skin");
+            if (!skin.unlocked) {
+              skinDiv.classList.add("locked");
+            }
+            if (skin.id == selectedSkin) {
+              skinDiv.classList.add("selected");
+            }
+            skinDiv.dataset.id = skin.id;
+
+            var patternDiv = document.createElement("div");
+            patternDiv.classList.add("pattern", skin.pattern);
+            skinDiv.appendChild(patternDiv);
+
+            var nameDiv = document.createElement("div");
+            nameDiv.classList.add("name");
+            nameDiv.textContent = skin.name;
+            skinDiv.appendChild(nameDiv);
+
+            var priceDiv = document.createElement("div");
+            priceDiv.classList.add("price");
+            if (skin.unlocked) {
+              priceDiv.textContent = "Comprado";
+            } else {
+              priceDiv.textContent = "Preço: $" + skin.price;
+            }
+            skinDiv.appendChild(priceDiv);
+
+            skinDiv.addEventListener("click", function () {
+              document.getElementById("errorMessage").textContent = "";
+              if (skin.unlocked) {
+                selectedSkin = skin.id;
+                localStorage.setItem("selectedSkin", selectedSkin);
+                updateSkinsDisplay();
+              } else if (currency >= skin.price) {
+                if (
+                  confirm(
+                    "Deseja comprar a skin " +
+                      skin.name +
+                      " por $" +
+                      skin.price +
+                      "?"
+                  )
+                ) {
+                  currency -= skin.price;
+                  skin.unlocked = true;
+                  unlockedSkins.push(skin.id);
+                  localStorage.setItem(
+                    "unlockedSkins",
+                    JSON.stringify(unlockedSkins)
+                  );
+                  updateCurrencyDisplay();
+                  saveCurrency();
+                  updateSkinsDisplay();
+                }
+              } else {
+                document.getElementById("errorMessage").textContent =
+                  "Not enough cash";
+              }
+            });
+
+            skinsContainer.appendChild(skinDiv);
+          });
         }
       };
     </script>
